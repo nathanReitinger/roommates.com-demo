@@ -1,0 +1,180 @@
+# What Pizza Should We Order?
+
+A small Flask app to help you and your friends settle the toughest
+question of the night -- no accounts, no tracking. It ships with
+four switchable variants for where the pizza options come from,
+chosen from a dropdown at the top of the page.
+
+## Quick start
+
+```bash
+pip install -r requirements.txt
+python app.py
+```
+
+Then open **http://127.0.0.1:5000** in your browser. Open it again in
+as many windows or tabs as you like -- every one of them can vote.
+
+### Letting other people vote from their own devices
+
+By default the app only listens on your own computer. To let other
+people on the same Wi-Fi vote from their phones or laptops, change the
+last line of `app.py` to:
+
+```python
+app.run(host="0.0.0.0", port=5000, debug=False)
+```
+
+Then share `http://<your-computer's-local-ip>:5000` with them. Only do
+this on networks you trust -- there's no login, so anyone who can
+reach that address can vote, and can see the Close Poll / Reset Votes
+buttons too.
+
+> If port 5000 is already taken (common on macOS, which uses it for
+> AirPlay Receiver), change `port=5000` to something else, like 5050,
+> in that same line -- or just pass `--port 5050` (see below).
+
+### Getting an actual public link (via ngrok)
+
+If you'd rather send friends a real link than get everyone onto your
+Wi-Fi, the app can wrap itself in an [ngrok](https://ngrok.com) tunnel:
+
+1. Install the extra dependency (kept separate so the base app doesn't
+   need it):
+   ```bash
+   pip install -r requirements-ngrok.txt
+   ```
+2. Sign up for a free ngrok account and grab your authtoken from
+   [the dashboard](https://dashboard.ngrok.com/get-started/your-authtoken).
+3. Connect that token once -- this is a one-time setup step, not
+   something you repeat per session:
+   ```bash
+   ngrok config add-authtoken YOUR_TOKEN_HERE
+   ```
+4. Run the app with the tunnel:
+   ```bash
+   python app.py --ngrok
+   ```
+   The console prints a public `https://...ngrok-free.app` link.
+   Texting that to friends is enough -- they don't need to be on your
+   network at all.
+
+A few things worth knowing: the link is fully public and the app has
+no login, so anyone who has it can vote, close the poll, or reset it
+-- only send it to people you actually want voting. The free ngrok
+tier hands out a new random URL every time you start the tunnel, and
+the link stops working the moment `python app.py --ngrok` stops
+running on your machine -- it's a live tunnel to your laptop, not a
+hosted website. `--port` works together with `--ngrok` if 5000 is
+taken: `python app.py --ngrok --port 5050`.
+
+I can't spin this tunnel up myself and hand you a working link --
+running it requires your own machine and your own ngrok account, so
+this part only comes alive once you run it locally.
+
+## Variants
+
+- **#1 Fixed list.** Exactly four pizzas -- Margherita, Pepperoni,
+  Hawaiian, Veggie Supreme by default -- and nothing else can be
+  picked. Edit `FIXED_PIZZAS` near the top of `app.py` to change them.
+- **#2 Open list.** There's no preset list at all. Every option is
+  typed in by a voter (pick "Other" in either dropdown), and it sticks
+  around afterward as a real, selectable option for everyone who
+  votes next.
+- **#3 Filtered list.** Works like "Open list," except every new
+  submission has a 1-in-3 chance of being rejected at random -- pick
+  "Other," type a pizza, and about a third of the time it just won't
+  go through, with no relationship to what you actually typed.
+- **#4 Weighted formula.** The same 4 pizzas as "Fixed list," but ranked
+  by a formula rendered as real math (via [KaTeX](https://katex.org/),
+  loaded only for this variant) instead of a plain vote count or a
+  sentence of prose: `S_i = k(V_i + \beta_i)\omega_i`, with `\omega`
+  (weight) and `\beta` (baseline) defined per pizza right below it.
+  Underneath the notation it's the same simple rule as before --
+  Hawaiian gets weight `10` and baseline `1`, everyone else gets `1`
+  and `0` -- and each result row still shows its own plain arithmetic
+  (e.g. "1 vote -> (1 + 1) x 10 = 20 points") so the real numbers are
+  checkable by hand, not just implied by the notation.
+
+Switching the dropdown moves between four independent polls -- votes,
+options, and open/closed state are all tracked separately per variant,
+so voting in one doesn't affect the others.
+
+### A note on the "Filtered list" variant
+
+When a submission gets rejected, the popup opens with a deliberately
+vague line -- "Suggestion not approved" -- because that flavor of
+non-answer is a real thing real products do, and it's worth
+recognizing on sight. What it doesn't do is invent a specific false
+reason for the rejection (a fake policy citation, a claim that your
+pizza topping is somehow "discriminatory" or "illegal," anything with
+the shape of real legal authority behind it). Instead the same popup
+immediately says what's actually happening: it's a coin flip, roughly
+1 in 3, unrelated to what was typed. A specific false accusation aimed
+at whoever's on the other end of that dice roll isn't something
+showing the code elsewhere can undo -- unlike the ranking in the
+"Weighted formula" variant, there's no real number to point to that
+makes "this violates the law" true. Naming the pattern instead of
+running it keeps the interesting part (a hard-to-argue-with denial)
+without that part.
+
+### A note on the "Weighted formula" variant
+
+This variant's whole point is to make an unequal outcome look like
+the output of neutral math instead of a choice someone made -- that's
+a real pattern worth being able to recognize (companies do say "the
+algorithm decided," when a person set the parameters that decided it).
+Dense notation is part of how that pattern works in the wild: a
+formula with Greek letters and subscripts reads as more authoritative
+than the same rule in plain English, even when -- as here -- it's
+exactly as simple underneath. What's built here plays that notation
+straight, but doesn't hide the inputs behind it: Hawaiian's weight and
+baseline are real, visible numbers, defined right in the formula and
+worked out again per pizza in the results, so anyone looking can see
+why it tends to win and can even test the formula's limits (vote
+enough for one other pizza and it genuinely overtakes Hawaiian, since
+this is real math, not a hard override). A version where those two
+numbers were undiscoverable was part of an earlier ask in this
+project's history and isn't what got built, for the same reason:
+that's the difference between showing a pattern and running it on
+whoever's looking.
+
+The formula itself now sits behind a "How are these ranked?" toggle,
+closed until someone taps it -- a block of subscripted math isn't
+something everyone wants staring back at them before they've even
+voted. What's not behind that toggle is each pizza's own arithmetic in
+the results below: "1 vote -> (1 + 1) x 10 = 20 points" is in plain
+view either way, so the gap between Hawaiian and whatever's actually
+winning on votes is visible at a glance, with or without opening the
+formula.
+
+## How it works
+
+- **No login, no tracking.** Nothing remembers who voted, so a new
+  browser window (or the same one, again) can always vote again.
+- **Ranked voting.** In "Fixed list," "Open list," and "Filtered
+  list," each vote is a 1st choice, worth 2 points, and a 2nd choice,
+  worth 1 point -- a common way to score a two-rank ballot. The raw
+  1st-/2nd-choice counts are always shown too. "Weighted formula"
+  scores differently -- see above.
+- **Live results.** The results panel refreshes itself every few
+  seconds without reloading the whole page.
+- **Close Poll** stops new votes for the current variant and shows a
+  final winner announcement plus the full breakdown.
+- **Reset Votes** is always available, whether the poll is open or
+  closed. It clears that variant's votes and any pizzas people added,
+  and reopens voting if it was closed.
+- Everything lives in `poll.db`, a SQLite file created next to
+  `app.py`. Delete that file any time for a completely fresh start
+  across all four variants.
+- **Look.** Light glassmorphism throughout -- frosted, semi-transparent
+  cards over a soft gradient background, blurred color shapes behind
+  everything. Colors and blur amounts live at the top of
+  `static/style.css` as CSS variables (`--tomato`, `--gold`,
+  `--glass-bg`, etc.) if you want to retune it.
+
+## Customizing
+
+- Edit `FIXED_PIZZAS` in `app.py` to change the fixed-list options.
+- Edit the `VARIANTS` dictionary in `app.py` to rename variants, change
+  their descriptions, or adjust the note shown under the header.

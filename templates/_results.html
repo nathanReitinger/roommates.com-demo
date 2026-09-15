@@ -1,0 +1,32 @@
+{% if total_voters > 0 or always_show_results %}
+<p class="voter-count">
+    {{ total_voters }} {{ "person has" if total_voters == 1 else "people have" }} voted
+</p>
+
+<div class="results-list">
+    {% for r in results %}
+    <div class="result-row {% if loop.index == 1 %}leader{% endif %}">
+        <div class="result-header">
+            <span class="rank">{{ loop.index }}</span>
+            <span class="name">{{ r.name }}</span>
+            <span class="points">{{ r.points }} pts</span>
+        </div>
+        <div class="bar-track">
+            <div class="bar-fill" style="width: {{ r.pct }}%;"></div>
+        </div>
+        {% if weighted %}
+        <p class="breakdown">
+            {{ r.votes }} vote{{ "s" if r.votes != 1 else "" }} &rarr;
+            ({{ r.votes }} + {{ r.baseline }}) &times; {{ r.weight }} = {{ r.points }} point{{ "s" if r.points != 1 else "" }}
+        </p>
+        {% else %}
+        <p class="breakdown">
+            Picked 1st by {{ r.first }} {{ "person" if r.first == 1 else "people" }}, 2nd by {{ r.second }} {{ "person" if r.second == 1 else "people" }}.
+        </p>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p class="empty-state">No votes yet. Be the first to pick.</p>
+{% endif %}

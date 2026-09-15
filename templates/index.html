@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>What Pizza Should We Order?</title>
+{% if weighted %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
+{% endif %}
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+
+    <div class="variant-bar">
+        <label for="variant-select">Demo variant</label>
+        <select id="variant-select" onchange="window.location.href = '/?variant=' + this.value;">
+            {% for key, meta in variants.items() %}
+            <option value="{{ key }}" {% if key == variant %}selected{% endif %}>{{ meta.label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <header>
+        <h1>What Pizza Should We Order?</h1>
+        <p class="subtitle">An app to help you and friends answer the toughest question of the night.</p>
+        <p class="subtitle-fine">Pick your 1st and 2nd choice. No sign-in -- vote from as many phones as you like.</p>
+    </header>
+
+    {% if variant_note %}
+    <p class="variant-note">{{ variant_note }}</p>
+    {% endif %}
+
+    {% if weighted %}
+    <details class="formula-disclosure">
+        <summary>How are these ranked?</summary>
+        <div class="formula-block">
+            <div class="katex-line" id="formula-main">
+                <span class="latex-src" hidden>S_i = k\,(V_i + \beta_i)\,\omega_i</span>
+            </div>
+            <div class="katex-line katex-line-small" id="formula-omega">
+                <span class="latex-src" hidden>\omega_i=\begin{cases}10, &amp; i=\text{Hawaiian}\\1, &amp; \text{otherwise}\end{cases}\quad k=1</span>
+            </div>
+            <div class="katex-line katex-line-small" id="formula-beta">
+                <span class="latex-src" hidden>\beta_i=\begin{cases}1, &amp; i=\text{Hawaiian}\\0, &amp; \text{otherwise}\end{cases}</span>
+            </div>
+            <p class="formula-legend">S = preference score &middot; V = votes &middot; &beta; = baseline offset &middot; &omega; = weight coefficient &middot; k = normalization constant</p>
+        </div>
+    </details>
+    {% endif %}
+
+    {% set filtered_rejections = get_flashed_messages(category_filter=["filtered"]) %}
+    {% with messages = get_flashed_messages(category_filter=["message"]) %}
+        {% if messages %}
+        <div class="flash">
+            {% for message in messages %}
+            <p>{{ message }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% endwith %}
+
+    {% if not closed %}
+    <section class="vote-card">
+        <h2>Cast your vote</h2>
+        <form action="{{ url_for('vote') }}" method="POST">
+            <input type="hidden" name="variant" value="{{ variant }}">
+            <div class="picks">
+                <div class="pick">
+                    <label for="first_choice">1st choice</label>
+                    <select name="first_choice" id="first_choice" required>
+                        <option value="" disabled selected>Choose a pizza</option>
+                        {% for pizza in pizzas %}
+                        <option value="{{ pizza.name }}">{{ pizza.name }}</option>
+                        {% endfor %}
+                        {% if allow_custom %}
+                        <option value="__other__">Other (type your own)</option>
+                        {% endif %}
+                    </select>
+                    {% if allow_custom %}
+                    <input type="text" name="first_choice_custom" id="first_choice_custom"
+                           class="custom-input" placeholder="Type a pizza name" maxlength="40"
+                           style="display:none;">
+                    {% endif %}
+                </div>
+                <div class="pick">
+                    <label for="second_choice">2nd choice</label>
+                    <select name="second_choice" id="second_choice" required>
+                        <option value="" disabled selected>Choose a pizza</option>
+                        {% for pizza in pizzas %}
+                        <option value="{{ pizza.name }}">{{ pizza.name }}</option>
+                        {% endfor %}
+                        {% if allow_custom %}
+                        <option value="__other__">Other (type your own)</option>
+                        {% endif %}
+                    </select>
+                    {% if allow_custom %}
+                    <input type="text" name="second_choice_custom" id="second_choice_custom"
+                           class="custom-input" placeholder="Type a pizza name" maxlength="40"
+                           style="display:none;">
+                    {% endif %}
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Cast Vote</button>
+        </form>
+    </section>
+    {% else %}
+    <section class="closed-banner">
+        <h2>Poll is closed</h2>
+        {% if total_voters > 0 or always_show_results %}
+            {% if winners|length > 1 %}
+            <p class="winner-announcement">It's a tie between <strong>{{ winners|join(' and ') }}</strong>.</p>
+            {% else %}
+            <p class="winner-announcement"><strong>{{ winners[0] }}</strong> takes the crown.</p>
+            {% endif %}
+        {% else %}
+        <p class="winner-announcement">No votes were cast this time.</p>
+        {% endif %}
+    </section>
+    {% endif %}
+
+    <section class="results-card">
+        <h2>{{ "Final results" if closed else "Live results" }}</h2>
+        <div id="results-container">
+            {% include "_results.html" %}
+        </div>
+    </section>
+
+    <footer>
+        {% if not closed %}
+        <form action="{{ url_for('close_poll') }}" method="POST"
+              onsubmit="return confirm('Close the poll? No more votes will be accepted.');">
+            <input type="hidden" name="variant" value="{{ variant }}">
+            <button type="submit" class="btn btn-secondary">Close Poll</button>
+        </form>
+        {% endif %}
+        <form action="{{ url_for('reset_poll') }}" method="POST"
+              onsubmit="return confirm('Reset votes? This clears all current votes and any pizzas people added, and reopens the poll if it is closed.');">
+            <input type="hidden" name="variant" value="{{ variant }}">
+            <button type="submit" class="btn btn-secondary">Reset Votes</button>
+        </form>
+    </footer>
+
+</div>
+
+{% if filtered_rejections %}
+<div id="filter-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="filter-modal-title">
+    <div class="modal-box">
+        <h2 id="filter-modal-title">Suggestion not approved</h2>
+        <p>&ldquo;<strong>{{ filtered_rejections[0] }}</strong>&rdquo; didn&rsquo;t clear review this time.</p>
+        <p class="modal-fineprint">In a lot of real products, that&rsquo;s where the explanation stops &mdash; a vague &ldquo;policy&rdquo; or &ldquo;compliance&rdquo; reason that&rsquo;s hard to argue with. Here&rsquo;s the real one: this happens completely at random, about 1 in 3 tries, no matter what you type. Try again &mdash; the odds are in your favor.</p>
+        <button type="button" class="btn btn-primary" id="filter-modal-close">Try again</button>
+    </div>
+</div>
+{% endif %}
+
+<script>
+    const firstSelect = document.getElementById('first_choice');
+    const secondSelect = document.getElementById('second_choice');
+
+    function syncOptions() {
+        if (!firstSelect || !secondSelect) return;
+        for (const opt of secondSelect.options) {
+            if (opt.value === "" || opt.value === "__other__") continue;
+            opt.disabled = opt.value === firstSelect.value;
+        }
+        for (const opt of firstSelect.options) {
+            if (opt.value === "" || opt.value === "__other__") continue;
+            opt.disabled = opt.value === secondSelect.value;
+        }
+    }
+
+    if (firstSelect && secondSelect) {
+        firstSelect.addEventListener('change', syncOptions);
+        secondSelect.addEventListener('change', syncOptions);
+    }
+
+    // Show or hide the free-text field when "Other" is chosen.
+    function setupCustomToggle(selectEl, inputEl) {
+        if (!selectEl || !inputEl) return;
+        function update() {
+            const isOther = selectEl.value === "__other__";
+            inputEl.style.display = isOther ? "block" : "none";
+            inputEl.required = isOther;
+            if (!isOther) inputEl.value = "";
+        }
+        selectEl.addEventListener('change', update);
+        update();
+    }
+    setupCustomToggle(firstSelect, document.getElementById('first_choice_custom'));
+    setupCustomToggle(secondSelect, document.getElementById('second_choice_custom'));
+
+    // Refresh just the results panel every few seconds, so any open
+    // window stays current without disturbing the form.
+    async function refreshResults() {
+        try {
+            const res = await fetch("{{ url_for('results_partial') }}?variant={{ variant }}");
+            if (res.ok) {
+                document.getElementById("results-container").innerHTML = await res.text();
+            }
+        } catch (err) {
+            // Ignore transient network hiccups.
+        }
+    }
+    setInterval(refreshResults, 4000);
+
+    // Render the formula block, reading raw LaTeX from hidden spans so
+    // no JS-string escaping of backslashes is needed anywhere.
+    function renderFormulas() {
+        if (typeof katex === 'undefined') {
+            window.setTimeout(renderFormulas, 50);
+            return;
+        }
+        document.querySelectorAll('.katex-line').forEach(function (el) {
+            const srcEl = el.querySelector('.latex-src');
+            if (!srcEl) return;
+            try {
+                katex.render(srcEl.textContent, el, { throwOnError: false, displayMode: true });
+            } catch (err) {
+                // Leave the plain-text fallback in place if rendering fails.
+            }
+        });
+    }
+    if (document.querySelector('.katex-line')) {
+        renderFormulas();
+    }
+
+    // Filter-rejection popup: shown once per page load when a submission
+    // was randomly rejected, dismissible by button, backdrop click, or Escape.
+    const filterModal = document.getElementById('filter-modal');
+    if (filterModal) {
+        filterModal.style.display = 'flex';
+        const filterCloseBtn = document.getElementById('filter-modal-close');
+        function closeFilterModal() {
+            filterModal.style.display = 'none';
+        }
+        if (filterCloseBtn) filterCloseBtn.addEventListener('click', closeFilterModal);
+        filterModal.addEventListener('click', function (e) {
+            if (e.target === filterModal) closeFilterModal();
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeFilterModal();
+        });
+    }
+</script>
+</body>
+</html>
