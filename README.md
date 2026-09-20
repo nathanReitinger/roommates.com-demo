@@ -1,19 +1,156 @@
 # What Pizza Should We Order?
 
-A small Flask app to help you and your friends settle the toughest
-question of the night -- no accounts, no tracking. It ships with
-four switchable variants for where the pizza options come from,
-chosen from a dropdown at the top of the page.
+A small Flask app to help you and your friends settle the toughes question of the night: pizza!
 
+Each of the app's four variants is built around a specific holding in Section 230 case law about when a platform is legally responsible for content a user supplied, teaching the case via demo. 
 
+<table>
+<tr>
+<td width="50%"><img src="media/v1.png" alt="Variant 1: fixed list of four pizzas"></td>
+<td width="50%"><img src="media/v4.png" alt="Variant 4: weighted formula ranking"></td>
+</tr>
+<tr>
+<td align="center"><em><b>#1 Fixed list.</b> Four options, chosen by
+the operator. Nothing else can be selected.</em></td>
+<td align="center"><em><b>#4 Weighted formula.</b> Any pizza can be
+voted for. The ranking formula and its parameters are chosen by the
+operator.</em></td>
+</tr>
+</table>
 
-<img src="media/v1.png" alt="v1" style="zoom:50%;" />
+## Legal background
 
+The reference case is *Fair Housing Council of San Fernando Valley v.
+Roommates.com, LLC*, 521 F.3d 1157 (9th Cir. 2008) (en banc).
+Roommate.com operated a roommate-matching site. It required users to
+answer questions about sex, sexual orientation, and familial status by
+choosing from answer options the site itself wrote, then used the
+answers to filter search results and match users. The Ninth Circuit,
+en banc, held that Section 230 of the Communications Decency Act, 47
+U.S.C. § 230, did not immunize Roommate.com for the questionnaire, the
+filtered search, or the matching system: requiring users to select
+from a limited, site-authored set of answers to a specific question
+made the site a co-developer of that content, not merely a publisher
+of someone else's speech. The same opinion held that a separate,
+open-ended "Additional Comments" field on the same site kept its
+immunity, because the site supplied no answer choices there and
+prompted nothing. The court's own term for the distinction was
+"neutral tools."
 
+The underlying discrimination claim did not succeed. On remand, the
+Ninth Circuit held in 2012 that the Fair Housing Act's definition of
+"dwelling" does not reach the selection of a roommate who will share a
+home, construing the statute narrowly under the canon of
+constitutional avoidance in light of the privacy and
+intimate-association interests a broader reading would implicate.
+*Fair Housing Council of San Fernando Valley v. Roommate.com, LLC*,
+666 F.3d 1216 (9th Cir. 2012). Roommate.com won on that ground. The
+2008 Section 230 holding is the part that survives as doctrine
+independent of that outcome.
 
-<img src="media/v4.png" alt="v4" style="zoom:50%;" />
+**Variant #1 (Fixed list)** corresponds to the questionnaire: a closed
+set of options the operator wrote, which a user can only select from,
+not add to.
 
+**Variant #2 (Open list)** corresponds to the Additional Comments
+field: no operator-supplied options, and every option on screen was
+typed in by a user.
 
+**Variant #3 (Filtered list)** concerns Section 230(c)(2)(A), which
+immunizes a provider's good-faith decision to restrict access to
+material it considers objectionable. Courts generally do not require a
+provider to give an accurate or complete reason for a removal or
+rejection, and most such decisions are covered by Section 230(c)(1)'s
+broader publisher immunity without (c)(2)(A)'s good-faith requirement
+ever being reached. The recognized exception is a demonstrably
+pretextual reason for the restriction, which some courts have held
+defeats good faith. This variant avoids that fact pattern rather than
+testing it: the rejection message discloses the actual mechanism (a
+1-in-3 random rejection) instead of substituting a false one, so there
+is no pretext to evaluate.
+
+**Variant #4 (Weighted formula)** concerns a separate, unresolved
+question: whether a platform's own ranking or recommendation logic,
+applied to unaltered user input, is something the platform can be held
+responsible for, distinct from the underlying content itself.
+
+*Force v. Facebook, Inc.*, 934 F.3d 53 (2d Cir. 2019), cert. denied
+(2020), held that Facebook's newsfeed-ranking and friend-suggestion
+algorithms fall within Section 230(c)(1)'s protection for traditional
+editorial functions. The Second Circuit rejected the argument that
+using an algorithm to select and arrange third-party content makes a
+platform a co-developer of that content.
+
+*Gonzalez v. Google LLC*, 598 U.S. 617 (2023), presented the same
+question for a different recommendation algorithm (YouTube's). The
+Supreme Court granted certiorari on the Section 230 question but did
+not decide it. Its per curiam opinion vacated and remanded in light of
+the companion case *Twitter, Inc. v. Taamneh*, 598 U.S. 471 (2023),
+which held the plaintiffs' underlying claim failed on its own terms
+regardless of Section 230. The scope of Section 230 for recommendation
+algorithms remains undecided at the Supreme Court.
+
+*Moody v. NetChoice, LLC*, 603 U.S. 707 (2024), is a First Amendment
+case, not a Section 230 case. The Court held, 9-0, that neither of two
+lower courts had properly analyzed facial First Amendment challenges to
+Florida and Texas content-moderation statutes, and vacated and
+remanded both. The majority opinion, by Justice Kagan, stated that, at
+least on the record before it, a platform's editorial judgments in
+compiling third-party posts into a product like a newsfeed are the
+platform's own protected expressive activity. Four justices wrote
+separately rather than joining that reasoning in full, and the opinion
+left open how the principle applies to engagement-based ranking rather
+than the values-based moderation examples it discussed.
+
+*Anderson v. TikTok, Inc.*, 116 F.4th 180 (3d Cir. 2024), applied
+Moody's language to Section 230. A ten-year-old died after TikTok's
+algorithm recommended a "Blackout Challenge" video to her For You Page.
+The Third Circuit held Section 230 did not bar claims based on that
+recommendation: because compiling and ranking third-party content into
+a feed is, per Moody, the platform's own protected expressive activity,
+it is the platform's own information for Section 230 purposes too, and
+Section 230 immunizes only information "provided by another." This
+conflicts with *Force* and with pre-Moody decisions in several other
+circuits, which the panel treated as superseded by Moody rather than
+reconciled with. The Third Circuit denied rehearing en banc in October
+2024. TikTok sought further review; based on the most recent sources
+available to me, the Supreme Court has not granted certiorari on this
+question, and the underlying case has proceeded on the merits in
+multidistrict litigation. A coalition of organizations including the
+Electronic Frontier Foundation filed an amicus brief arguing the panel
+extended Moody's language about values-based moderation to a different
+context -- engagement-based ranking -- that the Supreme Court had not
+addressed. Whether this holding is confined to the Third Circuit or
+spreads further is unresolved.
+
+A related, non-230 example: in March 2019, HUD charged Facebook with
+violating the Fair Housing Act, finding that its ad delivery algorithm
+skewed which users received housing ads along protected-characteristic
+lines even when an advertiser had targeted a broad, non-discriminatory
+audience. Facebook contested the charge, sending it to the Department
+of Justice, which sued and settled in June 2022; Meta agreed to stop
+using its "Special Ad Audience" targeting tool for housing ads and to
+build a new delivery system subject to DOJ approval and court
+oversight. That case turned on a delivery algorithm's output rather
+than a user-facing choice, and arises under a different statute, so it
+doesn't resolve the Section 230 questions above. It's included because
+it's a documented instance of an algorithm's own output, independent
+of what was requested of it, being treated as the basis for a legal
+claim.
+
+Variant #4 isolates the fact pattern this line of cases disagrees
+about: user input (votes) is unaltered, and a ranking function chosen
+entirely by the operator (a weight ω and baseline β assigned to each
+pizza) determines the outcome, expressed as a checkable formula rather
+than a hard override.
+
+> This is a teaching demo, not legal advice, and I'm not a lawyer. The
+> citations above are current as of when this was written. Several of
+> the questions discussed -- the scope of Section 230 for algorithmic
+> ranking, and the current status of *Anderson v. TikTok* specifically
+> -- are actively litigated and may have changed since.
+
+---
 
 ## Quick start
 
