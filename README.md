@@ -5,6 +5,16 @@ question of the night -- no accounts, no tracking. It ships with
 four switchable variants for where the pizza options come from,
 chosen from a dropdown at the top of the page.
 
+
+
+<img src="media/v1.png" alt="v1" style="zoom:50%;" />
+
+
+
+<img src="media/v4.png" alt="v4" style="zoom:50%;" />
+
+
+
 ## Quick start
 
 ```bash
